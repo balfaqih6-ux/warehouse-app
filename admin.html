@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة المنتجات</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; padding: 16px; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .back-btn { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 14px; font-size: 14px; cursor: pointer; text-decoration: none; color: #374151; }
+    h2 { font-size: 20px; color: #1e3a5f; }
+    .tab-row { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tab { flex: 1; padding: 10px; text-align: center; border-radius: 10px; border: 1.5px solid #e5e7eb; background: white; font-size: 14px; cursor: pointer; color: #64748b; font-family: inherit; }
+    .tab.active { background: #059669; color: white; border-color: #059669; font-weight: 600; }
+    .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #e5e7eb; }
+    label { display: block; font-size: 13px; color: #64748b; margin-bottom: 6px; font-weight: 500; }
+    input, select { width: 100%; padding: 12px 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 16px; outline: none; transition: border-color 0.2s; font-family: inherit; margin-bottom: 14px; }
+    input:focus { border-color: #059669; }
+    .btn-scan { width: 100%; padding: 12px; background: #f8fafc; border: 1.5px dashed #94a3b8; border-radius: 10px; font-size: 15px; cursor: pointer; margin-bottom: 14px; color: #475569; font-family: inherit; }
+    .scanner-box { width: 100%; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 1; margin-bottom: 12px; display: none; }
+    .btn-save { width: 100%; padding: 16px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-save:disabled { opacity: 0.5; }
+    .success-msg { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 16px; text-align: center; color: #166534; font-weight: 600; margin-bottom: 16px; display: none; }
+    .product-item { padding: 14px; border-bottom: 1px solid #f1f5f9; }
+    .product-item:last-child { border-bottom: none; }
+    .p-name { font-weight: 600; font-size: 15px; color: #1e3a5f; }
+    .p-meta { font-size: 12px; color: #64748b; margin-top: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html" class="back-btn">← رجوع</a>
+  <h2>⚙️ إدارة المنتجات</h2>
+</div>
+
+<div class="tab-row">
+  <button class="tab active" onclick="showTab('add', this)">إضافة منتج</button>
+  <button class="tab" onclick="showTab('list', this)">قائمة المنتجات</button>
+</div>
+
+<div id="tabAdd">
+  <div class="success-msg" id="successMsg">✓ تم حفظ المنتج بنجاح</div>
+  <div class="card">
+    <label>الباركود</label>
+    <button class="btn-scan" onclick="toggleScanner()">📷 مسح الباركود بالكاميرا</button>
+    <div class="scanner-box" id="scannerBox">
+      <div id="reader2"></div>
+    </div>
+    <input type="text" id="barcode" placeholder="أو اكتب الباركود يدوياً" inputmode="numeric">
+
+    <label>رقم الصنف (SKU)</label>
+    <input type="text" id="itemNumber" placeholder="مثال: SKU-001">
+
+    <label>اسم المنتج</label>
+    <input type="text" id="productName" placeholder="مثال: كرسي مكتبي أسود">
+
+    <label>وحدة القياس</label>
+    <select id="unit">
+      <option value="قطعة">قطعة</option>
+      <option value="كرتون">كرتون</option>
+      <option value="كيلو">كيلو</option>
+      <option value="متر">متر</option>
+      <option value="لتر">لتر</option>
+      <option value="علبة">علبة</option>
+    </select>
+
+    <label>وصف (اختياري)</label>
+    <input type="text" id="description" placeholder="تفاصيل إضافية...">
+
+    <button class="btn-save" id="saveBtn" onclick="saveProduct()">حفظ المنتج</button>
+  </div>
+</div>
+
+<div id="tabList" style="display:none;">
+  <div class="card">
+    <input type="text" id="searchInput" placeholder="ابحث باسم أو رقم الصنف أو باركود..." oninput="filterProducts(this.value)" style="margin-bottom:0;">
+  </div>
+  <div class="card" id="productListCard">
+    <p style="text-align:center;color:#94a3b8;padding:20px;">جاري التحميل...</p>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+let scanner2 = null;
+let allProducts = [];
+
+function showTab(tab, btn) {
+  document.getElementById('tabAdd').style.display = tab === 'add' ? 'block' : 'none';
+  document.getElementById('tabList').style.display = tab === 'list' ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'list') loadProducts();
+}
+
+function toggleScanner() {
+  const box = document.getElementById('scannerBox');
+  if (box.style.display === 'none' || !box.style.display) {
+    box.style.display = 'block';
+    scanner2 = new Html5Qrcode("reader2");
+    scanner2.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 150 } },
+      (code) => {
+        document.getElementById('barcode').value = code;
+        scanner2.stop();
+        box.style.display = 'none';
+      },
+      () => {}
+    );
+  } else {
+    if (scanner2) scanner2.stop();
+    box.style.display = 'none';
+  }
+}
+
+async function saveProduct() {
+  const barcode = document.getElementById('barcode').value.trim();
+  const itemNumber = document.getElementById('itemNumber').value.trim();
+  const name = document.getElementById('productName').value.trim();
+  const unit = document.getElementById('unit').value;
+  const description = document.getElementById('description').value.trim();
+
+  if (!barcode || !itemNumber || !name) {
+    alert('الباركود ورقم الصنف والاسم مطلوبة');
+    return;
+  }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'جاري الحفظ...';
+
+  const { error } = await db.from('products').upsert(
+    { barcode, item_number: itemNumber, name, unit, description, updated_at: new Date().toISOString() },
+    { onConflict: 'barcode' }
+  );
+
+  if (!error) {
+    document.getElementById('successMsg').style.display = 'block';
+    setTimeout(() => document.getElementById('successMsg').style.display = 'none', 3000);
+    ['barcode','itemNumber','productName','description'].forEach(id => document.getElementById(id).value = '');
+  } else {
+    alert('خطأ: تأكد أن الباركود ورقم الصنف غير مكررين');
+  }
+  btn.disabled = false;
+  btn.textContent = 'حفظ المنتج';
+}
+
+async function loadProducts() {
+  const { data } = await db.from('products').select('*').order('name');
+  allProducts = data || [];
+  renderProducts(allProducts);
+}
+
+function renderProducts(list) {
+  const card = document.getElementById('productListCard');
+  if (!list.length) {
+    card.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px;">لا توجد منتجات بعد</p>';
+    return;
+  }
+  card.innerHTML = list.map(p => `
+    <div class="product-item">
+      <div class="p-name">${p.name}</div>
+      <div class="p-meta">رقم الصنف: ${p.item_number} &nbsp;|&nbsp; الوحدة: ${p.unit}</div>
+      <div class="p-meta" style="color:#94a3b8;">باركود: ${p.barcode}</div>
+    </div>
+  `).join('');
+}
+
+function filterProducts(query) {
+  const q = query.toLowerCase();
+  renderProducts(allProducts.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    p.item_number.toLowerCase().includes(q) ||
+    p.barcode.includes(q)
+  ));
+}
+</script>
+</body>
+</html>
