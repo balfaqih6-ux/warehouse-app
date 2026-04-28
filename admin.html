@@ -6,6 +6,7 @@
   <title>إدارة المنتجات</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; padding: 16px; }
@@ -72,6 +73,18 @@
     <input type="text" id="description" placeholder="تفاصيل إضافية...">
 
     <button class="btn-save" id="saveBtn" onclick="saveProduct()">حفظ المنتج</button>
+
+    <div style="height:1px;background:#e5e7eb;margin:18px 0;"></div>
+
+    <label>رفع المنتجات من Excel</label>
+    <input type="file" id="excelFile" accept=".xlsx,.xls">
+
+    <button class="btn-save" id="uploadExcelBtn" style="background:#2563eb;" onclick="uploadExcel()">رفع المنتجات من Excel</button>
+
+    <p style="font-size:12px;color:#64748b;margin-top:10px;line-height:1.7;">
+      الأعمدة المطلوبة في ملف Excel:
+      name, item_number أو sku, barcode, unit, description
+    </p>
   </div>
 </div>
 
@@ -150,6 +163,73 @@ async function saveProduct() {
   }
   btn.disabled = false;
   btn.textContent = 'حفظ المنتج';
+}
+
+async function uploadExcel() {
+  const file = document.getElementById("excelFile").files[0];
+
+  if (!file) {
+    alert("اختر ملف Excel أولاً");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = async (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet);
+
+      if (!rows.length) {
+        alert("ملف Excel فارغ");
+        return;
+      }
+
+      const products = rows.map(row => ({
+        barcode: String(row.barcode || "").trim(),
+        item_number: String(row.item_number || row.sku || "").trim(),
+        name: String(row.name || "").trim(),
+        unit: String(row.unit || "قطعة").trim(),
+        description: String(row.description || "").trim(),
+        updated_at: new Date().toISOString()
+      }));
+
+      const invalidRows = products.filter(p => !p.barcode || !p.item_number || !p.name);
+
+      if (invalidRows.length > 0) {
+        alert("فيه صفوف ناقصة. لازم كل منتج يحتوي على barcode و item_number/sku و name");
+        return;
+      }
+
+      const btn = document.getElementById("uploadExcelBtn");
+      btn.disabled = true;
+      btn.textContent = "جاري رفع المنتجات...";
+
+      const { error } = await db
+        .from("products")
+        .upsert(products, { onConflict: "barcode" });
+
+      if (error) {
+        console.error(error);
+        alert("صار خطأ أثناء رفع Excel: " + error.message);
+      } else {
+        alert("تم رفع المنتجات من Excel بنجاح ✅");
+        document.getElementById("excelFile").value = "";
+        loadProducts();
+      }
+
+      btn.disabled = false;
+      btn.textContent = "رفع المنتجات من Excel";
+
+    } catch (err) {
+      console.error(err);
+      alert("تعذر قراءة ملف Excel");
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
 }
 
 async function loadProducts() {
