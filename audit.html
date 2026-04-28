@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الجرد السنوي</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; padding: 16px; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .back-btn { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 14px; font-size: 14px; cursor: pointer; text-decoration: none; color: #374151; }
+    h2 { font-size: 20px; color: #7f1d1d; }
+    .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #e5e7eb; }
+    label { display: block; font-size: 13px; color: #64748b; margin-bottom: 6px; font-weight: 500; }
+    input { width: 100%; padding: 12px 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 16px; outline: none; font-family: inherit; transition: border-color 0.2s; }
+    input:focus { border-color: #dc2626; }
+    .btn-red { width: 100%; padding: 14px; background: #dc2626; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 12px; }
+    .btn-red:disabled { opacity: 0.5; }
+    .btn-outline { width: 100%; padding: 12px; background: white; color: #dc2626; border: 1.5px solid #dc2626; border-radius: 12px; font-size: 15px; cursor: pointer; font-family: inherit; margin-top: 10px; }
+    .scanner-box { width: 100%; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 1; margin-bottom: 12px; }
+    .product-found { background: #fff1f2; border: 1.5px solid #fecdd3; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .product-name { font-size: 18px; font-weight: 600; color: #7f1d1d; }
+    .product-meta { font-size: 13px; color: #64748b; margin-top: 4px; }
+    .qty-row { display: flex; gap: 10px; align-items: flex-end; margin: 16px 0; }
+    .qty-row > div { flex: 1; }
+    .qty-btn { width: 48px; height: 48px; border: 1.5px solid #e5e7eb; border-radius: 10px; background: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
