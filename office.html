@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة المكتب والتقارير</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --green: #2f8f46;
+      --green-dark: #1f6b34;
+      --lime: #b7db27;
+      --dark: #231f20;
+      --bg: #f4f8f1;
+      --card: #ffffff;
+      --muted: #64748b;
+      --border: #dbe7d4;
+      --red: #dc2626;
+      --blue: #2563eb;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); padding: 16px; color: var(--dark); }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .back-btn { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; font-size: 14px; cursor: pointer; text-decoration: none; color: var(--dark); }
+    h2 { font-size: 20px; color: var(--green-dark); }
+    .card { background: white; border-radius: 16px; padding: 18px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: 0 6px 16px rgba(35,31,32,0.04); }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+    input, select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 16px; outline: none; font-family: inherit; margin-bottom: 12px; }
+    input:focus, select:focus { border-color: var(--green); }
+    .btn { width: 100%; padding: 13px; border: none; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; margin-top: 8px; }
+    .btn-green { background: var(--green); color: white; }
+    .btn-dark { background: var(--dark); color: white; }
+    .btn-lime { background: var(--lime); color: var(--dark); }
+    .btn-blue { background: var(--blue); color: white; }
+    .btn-red { background: var(--red); color: white; }
+    .tab-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px; }
+    .tab { padding: 11px; border-radius: 12px; border: 1px solid var(--border); background: white; color: var(--dark); font-weight: 700; cursor: pointer; font-family: inherit; }
+    .tab.active { background: var(--green); color: white; border-color: var(--green); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; font-size: 13px; }
+    th, td { border-bottom: 1px solid #eef2ea; padding: 10px; text-align: right; vertical-align: top; }
+    th { color: var(--green-dark); background: #f4f8f1; font-weight: 800; }
+    .badge { display:inline-block; padding:4px 8px; border-radius:999px; font-size:11px; font-weight:800; }
+    .badge-red { background:#fee2e2; color:#991b1b; }
+    .badge-green { background:#dcfce7; color:#166534; }
+    .badge-yellow { background:#fef9c3; color:#854d0e; }
+    .summary-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-bottom:14px; }
+    .summary { background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:12px; }
+    .summary-num { font-size:22px; font-weight:900; color:var(--green-dark); }
+    .summary-label { font-size:12px; color:var(--muted); }
+    .hidden { display: none; }
+    @media print {
+      .no-print, .header, .tab-row, #loginCard { display:none !important; }
+      body { background:white; }
+      .card { box-shadow:none; border:1px solid #ddd; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header no-print">
+  <a href="index.html" class="back-btn">← رجوع</a>
+  <h2>لوحة المكتب والتقارير</h2>
+</div>
+
+<div class="card" id="loginCard">
+  <label>رمز دخول المكتب</label>
+  <input type="password" id="officePinInput" placeholder="أدخل رمز المكتب">
+  <button class="btn btn-green" onclick="loginOffice()">دخول</button>
+</div>
+
+<div id="officeApp" class="hidden">
+  <div class="tab-row no-print">
+    <button class="tab active" onclick="showTab('auditSetup', this)">إعداد الجرد</button>
+    <button class="tab" onclick="showTab('auditReport', this)">تقرير الجرد</button>
+    <button class="tab" onclick="showTab('receivingReport', this)">تقرير الاستلام</button>
+    <button class="tab" onclick="showTab('alerts', this)">تنبيهات المكتب</button>
+  </div>
+
+  <div id="tabAuditSetup">
+    <div class="card">
+      <button class="btn btn-lime" onclick="downloadAuditTemplate()">تحميل قالب Excel للجرد المخزني</button>
+      <p style="font-size:12px;color:#64748b;margin-top:10px;line-height:1.8;">
+        الأعمدة المطلوبة: item_number, name, system_quantity<br>
+        الباركود اختياري: barcode
+      </p>
+    </div>
+
+    <div class="card">
+      <label>رمز جلسة الجرد</label>
+      <input type="text" id="auditSessionName" placeholder="مثال: AUDIT-2026" style="text-transform:uppercase;">
+
+      <button class="btn btn-green" onclick="createAuditSession()">إنشاء / فتح جلسة الجرد</button>
+
+      <div id="auditSessionStatus" style="font-size:13px;color:#1f6b34;margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+      <label>رفع ملف الرصيد النظامي من ERP</label>
+      <input type="file" id="auditExcelFile" accept=".xlsx,.xls">
+      <button class="btn btn-blue" onclick="uploadAuditExcel()">رفع وفحص ملف الجرد</button>
+      <div id="auditUploadStatus" style="font-size:13px;color:#64748b;margin-top:10px;line-height:1.8;"></div>
+    </div>
+  </div>
+
+  <div id="tabAuditReport" class="hidden">
+    <div class="card no-print">
+      <label>اختيار جلسة الجرد</label>
+      <select id="auditReportSession"></select>
+      <button class="btn btn-green" onclick="loadAuditReport()">عرض تقرير الجرد</button>
+      <button class="btn btn-blue" onclick="exportAuditReportExcel()">تصدير Excel</button>
+      <button class="btn btn-dark" onclick="window.print()">طباعة / حفظ PDF</button>
+    </div>
+
+    <div class="card" id="auditReportBox">
+      <p style="text-align:center;color:#94a3b8;">اختر جلسة لعرض التقرير</p>
+    </div>
+  </div>
+
+  <div id="tabReceivingReport" class="hidden">
+    <div class="card no-print">
+      <label>اختيار جلسة الاستلام</label>
+      <select id="receivingReportSession"></select>
+      <button class="btn btn-green" onclick="loadReceivingReport()">عرض تقرير الاستلام</button>
+      <button class="btn btn-blue" onclick="exportReceivingReportExcel()">تصدير Excel</button>
+      <button class="btn btn-dark" onclick="window.print()">طباعة / حفظ PDF</button>
+    </div>
+
+    <div class="card" id="receivingReportBox">
+      <p style="text-align:center;color:#94a3b8;">اختر جلسة لعرض التقرير</p>
+    </div>
+  </div>
+
+  <div id="tabAlerts" class="hidden">
+    <div class="card">
+      <button class="btn btn-green" onclick="loadAlerts()">تحديث التنبيهات</button>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px;color:#1f6b34;">باركودات / أصناف غير مسجلة</h3>
+      <div class="table-wrap" id="unregisteredBox"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px;color:#1f6b34;">منتجات موجودة في ملف الجرد وغير مضافة للتطبيق</h3>
+      <div class="table-wrap" id="missingProductsBox"></div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentAuditSession = null;
+let auditReportRows = [];
+let receivingReportRows = [];
+
+if (localStorage.getItem('office_logged_in') === 'yes') {
+  document.getElementById('loginCard').style.display = 'none';
+  document.getElementById('officeApp').classList.remove('hidden');
+  initOffice();
+}
+
+function loginOffice() {
+  const pin = document.getElementById('officePinInput').value;
+  if (!OFFICE_PIN || pin === OFFICE_PIN) {
+    localStorage.setItem('office_logged_in', 'yes');
+    document.getElementById('loginCard').style.display = 'none';
+    document.getElementById('officeApp').classList.remove('hidden');
+    initOffice();
+  } else {
+    alert('رمز المكتب غير صحيح');
+  }
+}
+
+function showTab(tab, btn) {
+  ['auditSetup','auditReport','receivingReport','alerts'].forEach(t => {
+    document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('hidden');
+  });
+  document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (tab === 'auditReport') loadAuditSessionsOptions();
+  if (tab === 'receivingReport') loadReceivingSessionsOptions();
+  if (tab === 'alerts') loadAlerts();
+}
+
+async function initOffice() {
+  await loadAuditSessionsOptions();
+  await loadReceivingSessionsOptions();
+}
+
+function downloadAuditTemplate() {
+  const rows = [
+    { item_number: '', name: '', system_quantity: '', barcode: '' }
+  ];
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Audit Template');
+  XLSX.writeFile(wb, 'zain_audit_template.xlsx');
+}
+
+async function createAuditSession() {
+  const name = document.getElementById('auditSessionName').value.trim().toUpperCase();
+
+  if (!name) {
+    alert('أدخل رمز جلسة الجرد');
+    return;
+  }
+
+  const { data: existing } = await db
+    .from('audit_sessions')
+    .select('*')
+    .eq('session_name', name)
+    .eq('status', 'open')
+    .single();
+
+  if (existing) {
+    currentAuditSession = existing;
+  } else {
+    const { data, error } = await db
+      .from('audit_sessions')
+      .insert({ session_name: name, status: 'open' })
+      .select()
+      .single();
+
+    if (error) {
+      alert('تعذر إنشاء الجلسة');
+      return;
+    }
+
+    currentAuditSession = data;
+  }
+
+  document.getElementById('auditSessionStatus').textContent = 'الجلسة جاهزة: ' + currentAuditSession.session_name;
+  await loadAuditSessionsOptions();
+}
+
+async function uploadAuditExcel() {
+  if (!currentAuditSession) {
+    alert('أنشئ أو افتح جلسة الجرد أولاً');
+    return;
+  }
+
+  const file = document.getElementById('auditExcelFile').files[0];
+  if (!file) {
+    alert('اختر ملف Excel');
+    return;
+  }
+
+  const status = document.getElementById('auditUploadStatus');
+  status.textContent = 'جاري قراءة الملف...';
+
+  const reader = new FileReader();
+
+  reader.onload = async (e) => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws);
+
+      if (!rows.length) {
+        alert('الملف فارغ');
+        return;
+      }
+
+      const systemRows = rows.map(row => ({
+        item_number: String(row.item_number || row['رقم الصنف'] || '').trim(),
+        product_name: String(row.name || row['اسم الصنف'] || '').trim(),
+        system_quantity: parseInt(row.system_quantity || row['الكمية النظامية'] || row['الكمية الحالية'] || 0),
+        barcode: String(row.barcode || row['باركود'] || '').trim()
+      }));
+
+      const invalid = systemRows.filter(r => !r.item_number || !r.product_name || isNaN(r.system_quantity));
+      if (invalid.length > 0) {
+        alert('يوجد صفوف ناقصة. المطلوب: item_number و name و system_quantity');
+        return;
+      }
+
+      status.textContent = 'جاري مطابقة المنتجات مع التطبيق...';
+
+      const { data: products } = await db.from('products').select('*').limit(20000);
+      const byItem = new Map((products || []).map(p => [String(p.item_number), p]));
+      const byBarcode = new Map((products || []).map(p => [String(p.barcode), p]));
+
+      let matched = [];
+      let missing = [];
+
+      for (const row of systemRows) {
+        let product = byItem.get(row.item_number);
+        let matchMethod = 'item_number';
+
+        if (!product && row.barcode) {
+          product = byBarcode.get(row.barcode);
+          matchMethod = 'barcode';
+        }
+
+        if (product) {
+          matched.push({
+            session_id: currentAuditSession.id,
+            item_number: product.item_number,
+            product_name: product.name,
+            barcode: product.barcode,
+            system_quantity: row.system_quantity,
+            matched_product_id: product.id,
+            match_method: matchMethod
+          });
+        } else {
+          missing.push({
+            session_id: currentAuditSession.id,
+            item_number: row.item_number,
+            product_name: row.product_name,
+            barcode: row.barcode || null,
+            system_quantity: row.system_quantity,
+            source: 'audit_excel',
+            status: 'pending'
+          });
+        }
+      }
+
+      if (matched.length) {
+        const { error } = await db
+          .from('audit_system_items')
+          .upsert(matched, { onConflict: 'session_id,item_number' });
+
+        if (error) {
+          alert('خطأ أثناء حفظ المنتجات المطابقة: ' + error.message);
+          return;
+        }
+      }
+
+      if (missing.length) {
+        await db.from('missing_products').insert(missing);
+      }
+
+      await db.from('audit_trail').insert({
+        action_type: 'audit_excel_uploaded',
+        source_page: 'office',
+        session_code: currentAuditSession.session_name,
+        quantity: rows.length,
+        details: {
+          matched: matched.length,
+          missing: missing.length
+        }
+      });
+
+      status.innerHTML = `
+        ✓ تم رفع الملف<br>
+        المنتجات المطابقة: <strong>${matched.length}</strong><br>
+        المنتجات غير الموجودة في التطبيق: <strong style="color:#dc2626;">${missing.length}</strong><br>
+        ${missing.length ? 'راجع تبويب التنبيهات لإضافة المنتجات الناقصة قبل بدء الجرد.' : 'جميع المنتجات موجودة في التطبيق.'}
+      `;
+
+    } catch (err) {
+      console.error(err);
+      alert('تعذر قراءة ملف Excel');
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+async function loadAuditSessionsOptions() {
+  const { data } = await db.from('audit_sessions').select('*').order('created_at', { ascending: false });
+  const select = document.getElementById('auditReportSession');
+  if (!select) return;
+  select.innerHTML = (data || []).map(s => `<option value="${s.id}">${s.session_name} - ${s.status}</option>`).join('');
+}
+
+async function loadReceivingSessionsOptions() {
+  const { data } = await db.from('receiving_sessions').select('*').order('created_at', { ascending: false });
+  const select = document.getElementById('receivingReportSession');
+  if (!select) return;
+  select.innerHTML = (data || []).map(s => `<option value="${s.id}">${s.session_code}</option>`).join('');
+}
+
+async function loadAuditReport() {
+  const sessionId = document.getElementById('auditReportSession').value;
+  if (!sessionId) return;
+
+  const { data: systemItems } = await db.from('audit_system_items').select('*').eq('session_id', sessionId);
+  const { data: entries } = await db.from('audit_entries').select('*').eq('session_id', sessionId);
+
+  const map = new Map();
+
+  (systemItems || []).forEach(item => {
+    map.set(item.item_number, {
+      item_number: item.item_number,
+      product_name: item.product_name,
+      barcode: item.barcode || '',
+      system_quantity: item.system_quantity || 0,
+      actual_quantity: 0,
+      difference: 0,
+      employees: new Set(),
+      methods: new Set()
+    });
+  });
+
+  (entries || []).forEach(e => {
+    const key = e.item_number || e.barcode;
+    if (!map.has(key)) {
+      map.set(key, {
+        item_number: e.item_number || '',
+        product_name: e.product_name || '',
+        barcode: e.barcode || '',
+        system_quantity: e.system_quantity || 0,
+        actual_quantity: 0,
+        difference: 0,
+        employees: new Set(),
+        methods: new Set()
+      });
+    }
+
+    const row = map.get(key);
+    row.actual_quantity += Number(e.actual_quantity || 0);
+    row.system_quantity = Number(row.system_quantity || e.system_quantity || 0);
+    if (!row.barcode && e.barcode) row.barcode = e.barcode;
+    if (e.employee_name) row.employees.add(e.employee_name);
+    if (e.entry_method) row.methods.add(e.entry_method);
+  });
+
+  auditReportRows = Array.from(map.values()).map(r => ({
+    item_number: r.item_number,
+    product_name: r.product_name,
+    barcode: r.barcode,
+    system_quantity: r.system_quantity,
+    actual_quantity: r.actual_quantity,
+    difference: r.actual_quantity - r.system_quantity,
+    employees: Array.from(r.employees).join(', '),
+    entry_methods: Array.from(r.methods).join(', ')
+  }));
+
+  renderAuditReport(auditReportRows);
+}
+
+function renderAuditReport(rows) {
+  const totalItems = rows.length;
+  const diffItems = rows.filter(r => r.difference !== 0).length;
+  const shortage = rows.filter(r => r.difference < 0).length;
+  const surplus = rows.filter(r => r.difference > 0).length;
+
+  document.getElementById('auditReportBox').innerHTML = `
+    <h3 style="margin-bottom:14px;color:#1f6b34;">تقرير الجرد المخزني</h3>
+
+    <div class="summary-grid">
+      <div class="summary"><div class="summary-num">${totalItems}</div><div class="summary-label">عدد الأصناف</div></div>
+      <div class="summary"><div class="summary-num">${diffItems}</div><div class="summary-label">أصناف بها فرق</div></div>
+      <div class="summary"><div class="summary-num">${shortage}</div><div class="summary-label">نقص</div></div>
+      <div class="summary"><div class="summary-num">${surplus}</div><div class="summary-label">زيادة</div></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>رقم الصنف</th>
+            <th>اسم الصنف</th>
+            <th>الباركود</th>
+            <th>النظامي</th>
+            <th>الفعلي</th>
+            <th>الفرق</th>
+            <th>الموظفين</th>
+            <th>طريقة الإدخال</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${r.item_number || '-'}</td>
+              <td>${r.product_name || '-'}</td>
+              <td>${r.barcode || '-'}</td>
+              <td>${r.system_quantity}</td>
+              <td>${r.actual_quantity}</td>
+              <td>
+                <span class="badge ${r.difference === 0 ? 'badge-green' : r.difference > 0 ? 'badge-yellow' : 'badge-red'}">
+                  ${r.difference}
+                </span>
+              </td>
+              <td>${r.employees || '-'}</td>
+              <td>${r.entry_methods || '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function exportAuditReportExcel() {
+  if (!auditReportRows.length) {
+    alert('اعرض التقرير أولاً');
+    return;
+  }
+
+  const ws = XLSX.utils.json_to_sheet(auditReportRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Audit Report');
+  XLSX.writeFile(wb, 'zain_audit_report.xlsx');
+}
+
+async function loadReceivingReport() {
+  const sessionId = document.getElementById('receivingReportSession').value;
+  if (!sessionId) return;
+
+  const { data: session } = await db.from('receiving_sessions').select('*').eq('id', sessionId).single();
+  const { data: entries } = await db.from('receiving_log').select('*').eq('session_id', sessionId);
+
+  const map = new Map();
+
+  (entries || []).forEach(e => {
+    const key = e.item_number || e.barcode;
+    if (!map.has(key)) {
+      map.set(key, {
+        item_number: e.item_number || '',
+        product_name: e.product_name || '',
+        barcode: e.barcode || '',
+        quantity: 0,
+        employee_name: e.employee_name || '',
+        notes: [],
+        entry_methods: new Set()
+      });
+    }
+
+    const row = map.get(key);
+    row.quantity += Number(e.quantity || 0);
+    if (e.notes) row.notes.push(e.notes);
+    if (e.entry_method) row.entry_methods.add(e.entry_method);
+  });
+
+  receivingReportRows = Array.from(map.values()).map(r => ({
+    item_number: r.item_number,
+    product_name: r.product_name,
+    barcode: r.barcode,
+    quantity: r.quantity,
+    employee_name: r.employee_name,
+    notes: r.notes.join(' | '),
+    entry_methods: Array.from(r.entry_methods).join(', ')
+  }));
+
+  renderReceivingReport(session, receivingReportRows);
+}
+
+function renderReceivingReport(session, rows) {
+  const totalQty = rows.reduce((sum, r) => sum + Number(r.quantity || 0), 0);
+
+  document.getElementById('receivingReportBox').innerHTML = `
+    <h3 style="margin-bottom:14px;color:#1f6b34;">تقرير استلام البضاعة</h3>
+
+    <div style="font-size:13px;color:#64748b;line-height:1.8;margin-bottom:14px;">
+      <strong>الجلسة:</strong> ${session.session_code}<br>
+      <strong>المستند:</strong> ${session.document_type} - ${session.document_number}<br>
+      <strong>المورد:</strong> ${session.supplier_name || '-'}<br>
+      <strong>الموظف:</strong> ${session.employee_name}
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary"><div class="summary-num">${rows.length}</div><div class="summary-label">عدد الأصناف</div></div>
+      <div class="summary"><div class="summary-num">${totalQty}</div><div class="summary-label">إجمالي الكميات</div></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>رقم الصنف</th>
+            <th>اسم الصنف</th>
+            <th>الباركود</th>
+            <th>الكمية</th>
+            <th>الموظف</th>
+            <th>طريقة الإدخال</th>
+            <th>ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${r.item_number || '-'}</td>
+              <td>${r.product_name || '-'}</td>
+              <td>${r.barcode || '-'}</td>
+              <td>${r.quantity}</td>
+              <td>${r.employee_name || '-'}</td>
+              <td>${r.entry_methods || '-'}</td>
+              <td>${r.notes || '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function exportReceivingReportExcel() {
+  if (!receivingReportRows.length) {
+    alert('اعرض التقرير أولاً');
+    return;
+  }
+
+  const ws = XLSX.utils.json_to_sheet(receivingReportRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Receiving Report');
+  XLSX.writeFile(wb, 'zain_receiving_report.xlsx');
+}
+
+async function loadAlerts() {
+  const { data: unregistered } = await db
+    .from('unregistered_barcodes')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  const { data: missing } = await db
+    .from('missing_products')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  renderUnregistered(unregistered || []);
+  renderMissingProducts(missing || []);
+}
+
+function renderUnregistered(rows) {
+  const box = document.getElementById('unregisteredBox');
+
+  if (!rows.length) {
+    box.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:15px;">لا توجد تنبيهات</p>';
+    return;
+  }
+
+  box.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>المصدر</th>
+          <th>القيمة</th>
+          <th>الباركود</th>
+          <th>رقم الصنف</th>
+          <th>الموظف</th>
+          <th>الجلسة</th>
+          <th>التاريخ</th>
+          <th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td>${r.source_page}</td>
+            <td>${r.entry_value || '-'}</td>
+            <td>${r.barcode || '-'}</td>
+            <td>${r.item_number || '-'}</td>
+            <td>${r.employee_name || '-'}</td>
+            <td>${r.session_code || '-'}</td>
+            <td>${new Date(r.created_at).toLocaleString('ar-SA')}</td>
+            <td><button class="btn btn-green" onclick="markUnregisteredResolved('${r.id}')">تمت المعالجة</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderMissingProducts(rows) {
+  const box = document.getElementById('missingProductsBox');
+
+  if (!rows.length) {
+    box.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:15px;">لا توجد منتجات ناقصة</p>';
+    return;
+  }
+
+  box.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>رقم الصنف</th>
+          <th>اسم الصنف</th>
+          <th>الباركود</th>
+          <th>الكمية النظامية</th>
+          <th>التاريخ</th>
+          <th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td>${r.item_number || '-'}</td>
+            <td>${r.product_name || '-'}</td>
+            <td>${r.barcode || '-'}</td>
+            <td>${r.system_quantity || 0}</td>
+            <td>${new Date(r.created_at).toLocaleString('ar-SA')}</td>
+            <td><button class="btn btn-green" onclick="markMissingResolved('${r.id}')">تمت الإضافة</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function markUnregisteredResolved(id) {
+  await db.from('unregistered_barcodes').update({
+    status: 'resolved',
+    resolved_at: new Date().toISOString()
+  }).eq('id', id);
+
+  loadAlerts();
+}
+
+async function markMissingResolved(id) {
+  await db.from('missing_products').update({
+    status: 'resolved',
+    resolved_at: new Date().toISOString()
+  }).eq('id', id);
+
+  loadAlerts();
+}
+</script>
+</body>
+</html>
