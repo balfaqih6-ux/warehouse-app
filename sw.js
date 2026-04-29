@@ -1,15 +1,31 @@
-const CACHE = 'warehouse-v1';
+const CACHE = 'warehouse-zain-v2';
+
 const FILES = [
   '/',
   '/index.html',
   '/receiving.html',
   '/audit.html',
   '/admin.html',
-  '/config.js'
+  '/office.html',
+  '/config.js',
+  '/manifest.json',
+  '/zain-logo.jpg'
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(FILES).catch(() => null))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key => key !== CACHE ? caches.delete(key) : null))
+    )
+  );
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', e => {
