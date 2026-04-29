@@ -1,4 +1,4 @@
-const CACHE = 'warehouse-zain-v3';
+const CACHE = 'warehouse-zain-v4';
 
 const FILES = [
   '/',
