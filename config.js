@@ -3,3 +3,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const MAKE_WEBHOOK_RECEIVING = '';
 const MAKE_WEBHOOK_AUDIT = '';
+
+// رقم دخول بسيط للمكتب
+// غيّره لأي رقم تبيه
+const OFFICE_PIN = '1234';
