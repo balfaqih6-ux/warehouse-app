@@ -3,38 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>الجرد السنوي</title>
+  <title>الجرد المخزني</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
+    :root {
+      --green: #2f8f46;
+      --green-dark: #1f6b34;
+      --lime: #b7db27;
+      --dark: #231f20;
+      --bg: #f4f8f1;
+      --card: #ffffff;
+      --muted: #64748b;
+      --border: #dbe7d4;
+      --red: #dc2626;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; padding: 16px; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); padding: 16px; color: var(--dark); }
     .header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-    .back-btn { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 14px; font-size: 14px; cursor: pointer; text-decoration: none; color: #374151; }
-    h2 { font-size: 20px; color: #7f1d1d; }
-    .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #e5e7eb; }
-    label { display: block; font-size: 13px; color: #64748b; margin-bottom: 6px; font-weight: 500; }
-    input { width: 100%; padding: 12px 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 16px; outline: none; font-family: inherit; transition: border-color 0.2s; }
-    input:focus { border-color: #dc2626; }
-    .btn-red { width: 100%; padding: 14px; background: #dc2626; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 12px; }
-    .btn-red:disabled { opacity: 0.5; }
-    .btn-outline { width: 100%; padding: 12px; background: white; color: #dc2626; border: 1.5px solid #dc2626; border-radius: 12px; font-size: 15px; cursor: pointer; font-family: inherit; margin-top: 10px; }
+    .back-btn { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; font-size: 14px; cursor: pointer; text-decoration: none; color: var(--dark); }
+    h2 { font-size: 20px; color: var(--dark); }
+    .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: 0 6px 16px rgba(35,31,32,0.04); }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+    input, select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 16px; outline: none; font-family: inherit; transition: border-color 0.2s; margin-bottom: 14px; }
+    input:focus, select:focus { border-color: var(--green); }
+    .btn-main { width: 100%; padding: 14px; background: var(--dark); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit; margin-top: 8px; }
+    .btn-main:disabled { opacity: 0.5; }
+    .btn-outline { width: 100%; padding: 12px; background: white; color: var(--green-dark); border: 1.5px solid var(--green); border-radius: 12px; font-size: 15px; cursor: pointer; font-family: inherit; margin-top: 10px; }
     .scanner-box { width: 100%; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 1; margin-bottom: 12px; }
-    .product-found { background: #fff1f2; border: 1.5px solid #fecdd3; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-    .product-name { font-size: 18px; font-weight: 600; color: #7f1d1d; }
-    .product-meta { font-size: 13px; color: #64748b; margin-top: 4px; }
+    .product-found { background: #f0fdf4; border: 1.5px solid #9be7ae; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .product-name { font-size: 18px; font-weight: 800; color: var(--green-dark); }
+    .product-meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .product-not-found { background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 12px; padding: 16px; margin-bottom: 16px; color: #991b1b; font-size: 14px; line-height: 1.8; }
     .qty-row { display: flex; gap: 10px; align-items: flex-end; margin: 16px 0; }
     .qty-row > div { flex: 1; }
-    .qty-btn { width: 48px; height: 48px; border: 1.5px solid #e5e7eb; border-radius: 10px; background: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .success-msg { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 20px; text-align: center; color: #166534; font-weight: 600; font-size: 18px; display: none; margin-bottom: 16px; }
-    .session-info { background: #fff1f2; border: 1.5px solid #fecdd3; border-radius: 12px; padding: 14px; margin-bottom: 16px; }
-    .session-name { font-weight: 600; color: #7f1d1d; font-size: 15px; }
-    .session-count { font-size: 13px; color: #64748b; margin-top: 4px; }
-    .upload-area { border: 2px dashed #fca5a5; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; color: #64748b; font-size: 14px; background: #fff1f2; }
-    .step-indicator { display: flex; gap: 8px; margin-bottom: 20px; }
-    .step-dot { flex: 1; height: 4px; border-radius: 2px; background: #e5e7eb; }
-    .step-dot.active { background: #dc2626; }
+    .qty-btn { width: 48px; height: 48px; border: 1.5px solid var(--border); border-radius: 10px; background: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .success-msg { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 20px; text-align: center; color: #166534; font-weight: 800; font-size: 18px; display: none; margin-bottom: 16px; }
+    .session-info { background: #eef8e7; border: 1.5px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+    .session-name { font-weight: 800; color: var(--green-dark); font-size: 15px; }
+    .session-count { font-size: 13px; color: var(--muted); margin-top: 4px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-left: 8px; }
   </style>
@@ -43,81 +51,66 @@
 
 <div class="header">
   <a href="index.html" class="back-btn">← رجوع</a>
-  <h2>🟥 الجرد السنوي</h2>
+  <h2>الجرد المخزني</h2>
 </div>
 
-<div class="step-indicator">
-  <div class="step-dot active" id="dot1"></div>
-  <div class="step-dot" id="dot2"></div>
-  <div class="step-dot" id="dot3"></div>
-</div>
-
-<!-- المرحلة 1: إنشاء جلسة أو الانضمام -->
 <div id="phase1">
   <div class="card">
     <label>اسم الموظف</label>
     <input type="text" id="employeeName" placeholder="أدخل اسمك">
 
-    <label style="margin-top:14px;">رمز جلسة الجرد</label>
-    <input type="text" id="sessionCode" placeholder="مثال: AUDIT-2024" style="text-transform:uppercase;">
-    <p style="font-size:12px;color:#94a3b8;margin-top:-10px;margin-bottom:14px;">اتفق مع زملائك على نفس الرمز</p>
+    <label>رمز جلسة الجرد</label>
+    <input type="text" id="sessionCode" placeholder="مثال: AUDIT-2026" style="text-transform:uppercase;">
+    <p style="font-size:12px;color:#64748b;margin-top:-8px;margin-bottom:14px;">رمز الجلسة تحصل عليه من المكتب</p>
 
-    <button class="btn-red" onclick="startSession()">بدء الجرد أو الانضمام</button>
+    <button class="btn-main" onclick="joinAuditSession()">بدء الجرد</button>
+    <button class="btn-outline" onclick="syncOfflineAudit()">مزامنة البيانات المحفوظة مؤقتًا</button>
   </div>
 </div>
 
-<!-- المرحلة 2: رفع Excel (اختياري) -->
 <div id="phase2" style="display:none;">
   <div class="session-info">
     <div class="session-name" id="sessionDisplay"></div>
-    <div class="session-count" id="entryCount">عدد الإدخالات: 0</div>
-  </div>
-
-  <div class="card">
-    <label>رفع ملف Excel بالرصيد النظامي (اختياري)</label>
-    <div class="upload-area" onclick="document.getElementById('excelFile').click()">
-      📊 اضغط لرفع ملف Excel<br>
-      <span style="font-size:12px;color:#94a3b8;">يجب أن يحتوي على أعمدة: item_number, system_quantity</span>
-    </div>
-    <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none;" onchange="processExcel(this)">
-    <div id="excelStatus" style="font-size:13px;color:#059669;margin-top:8px;display:none;"></div>
-    <button class="btn-red" onclick="goToScan()" style="margin-top:16px;">التالي — بدء المسح</button>
-  </div>
-</div>
-
-<!-- المرحلة 3: المسح والإدخال -->
-<div id="phase3" style="display:none;">
-  <div class="session-info">
-    <div class="session-name" id="sessionDisplay3"></div>
-    <div class="session-count" id="entryCount3">عدد الإدخالات: 0</div>
+    <div class="session-count" id="entryCount">عدد إدخالاتك: 0</div>
   </div>
 
   <div class="success-msg" id="successMsg">✓ تم التسجيل!</div>
 
-  <div class="card" id="scannerCard3">
+  <div class="card" id="scannerCard">
     <label>امسح باركود المنتج</label>
-    <div class="scanner-box"><div id="reader3"></div></div>
+    <div class="scanner-box"><div id="reader"></div></div>
     <p style="font-size:13px;color:#94a3b8;text-align:center;">وجّه الكاميرا نحو الباركود</p>
   </div>
 
-  <div id="productResult3"></div>
+  <div class="card" id="manualCard">
+    <label>إدخال يدوي عند تعذر قراءة الباركود</label>
+    <select id="manualType">
+      <option value="auto">بحث تلقائي بالباركود أو رقم الصنف</option>
+      <option value="barcode">باركود</option>
+      <option value="item_number">رقم الصنف SKU</option>
+    </select>
+    <input type="text" id="manualCode" placeholder="اكتب الباركود أو رقم الصنف">
+    <button class="btn-outline" onclick="manualLookup()">بحث عن المنتج</button>
+  </div>
 
-  <div class="card" id="entryForm3" style="display:none;">
+  <div id="productResult"></div>
+
+  <div class="card" id="entryForm" style="display:none;">
     <div class="qty-row">
       <div>
         <label>الكمية الفعلية الموجودة</label>
-        <input type="number" id="quantity3" min="0" value="0" inputmode="numeric" style="font-size:24px;font-weight:600;text-align:center;">
+        <input type="number" id="quantity" min="0" value="0" inputmode="numeric" style="font-size:24px;font-weight:800;text-align:center;">
       </div>
-      <button class="qty-btn" onclick="changeQty3(-1)">−</button>
-      <button class="qty-btn" onclick="changeQty3(1)">+</button>
+      <button class="qty-btn" onclick="changeQty(-1)">−</button>
+      <button class="qty-btn" onclick="changeQty(1)">+</button>
     </div>
-    <button class="btn-red" id="submitBtn3" onclick="submitEntry3()">تسجيل الكمية</button>
-    <button class="btn-outline" onclick="resetScanner3()">مسح منتج آخر</button>
+    <button class="btn-main" id="submitBtn" onclick="submitAuditEntry()">تسجيل الكمية</button>
+    <button class="btn-outline" onclick="resetScanner()">مسح منتج آخر</button>
   </div>
 
-  <div class="card" style="margin-top:8px;">
-    <button class="btn-outline" onclick="finishAudit()" style="color:#374151;border-color:#e5e7eb;">
-      إنهاء الجرد وعرض التقرير
+  <div class="card">
+    <button class="btn-outline" onclick="finishEmployeeAudit()" style="color:#374151;border-color:#dbe7d4;">
+      إنهاء عمليتي
     </button>
   </div>
 </div>
@@ -128,164 +121,349 @@ const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentSession = null;
-let currentProduct3 = null;
-let scanner3 = null;
+let currentProduct = null;
+let scanner = null;
 let entryCount = 0;
-let systemQuantities = {};
+let currentEntryMethod = 'scanner';
+let currentSystemQuantity = 0;
 
 const savedName = localStorage.getItem('employeeName');
 if (savedName) document.getElementById('employeeName').value = savedName;
 
-function setDots(active) {
-  for (let i = 1; i <= 3; i++) {
-    document.getElementById('dot'+i).classList.toggle('active', i <= active);
-  }
-}
-
-async function startSession() {
-  const name = document.getElementById('employeeName').value.trim();
+async function joinAuditSession() {
+  const employeeName = document.getElementById('employeeName').value.trim();
   const code = document.getElementById('sessionCode').value.trim().toUpperCase();
-  if (!name) { alert('أدخل اسمك'); return; }
-  if (!code) { alert('أدخل رمز الجلسة'); return; }
-  localStorage.setItem('employeeName', name);
 
-  const { data: existing } = await db.from('audit_sessions').select('*').eq('session_name', code).eq('status', 'open').single();
-  if (existing) {
-    currentSession = existing;
-  } else {
-    const { data: newSession } = await db.from('audit_sessions').insert({ session_name: code }).select().single();
-    currentSession = newSession;
+  if (!employeeName) { alert('أدخل اسمك'); return; }
+  if (!code) { alert('أدخل رمز الجلسة'); return; }
+
+  localStorage.setItem('employeeName', employeeName);
+
+  const { data } = await db
+    .from('audit_sessions')
+    .select('*')
+    .eq('session_name', code)
+    .eq('status', 'open')
+    .single();
+
+  if (!data) {
+    alert('جلسة الجرد غير موجودة أو مغلقة. راجع المكتب.');
+    return;
   }
 
-  document.getElementById('sessionDisplay').textContent = 'جلسة: ' + code;
+  currentSession = data;
+
   document.getElementById('phase1').style.display = 'none';
   document.getElementById('phase2').style.display = 'block';
-  setDots(2);
-  await refreshCount();
+  document.getElementById('sessionDisplay').textContent = 'جلسة: ' + code;
+
+  await refreshMyCount();
+  startScanner();
 }
 
-function processExcel(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const wb = XLSX.read(e.target.result, { type: 'array' });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws);
-    systemQuantities = {};
-    rows.forEach(row => {
-      const itemNum = String(row['item_number'] || row['رقم الصنف'] || '').trim();
-      const qty = parseInt(row['system_quantity'] || row['الكمية النظامية'] || 0);
-      if (itemNum) systemQuantities[itemNum] = qty;
-    });
-    const count = Object.keys(systemQuantities).length;
-    const status = document.getElementById('excelStatus');
-    status.style.display = 'block';
-    status.textContent = '✓ تم تحميل ' + count + ' منتج من الملف';
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function goToScan() {
-  document.getElementById('phase2').style.display = 'none';
-  document.getElementById('phase3').style.display = 'block';
-  document.getElementById('sessionDisplay3').textContent = document.getElementById('sessionDisplay').textContent;
-  setDots(3);
-  startScanner3();
-}
-
-function startScanner3() {
-  scanner3 = new Html5Qrcode("reader3");
-  scanner3.start(
+function startScanner() {
+  if (scanner) return;
+  scanner = new Html5Qrcode("reader");
+  scanner.start(
     { facingMode: "environment" },
     { fps: 10, qrbox: { width: 250, height: 150 } },
-    onScanSuccess3,
+    async (code) => {
+      currentEntryMethod = 'scanner';
+      await stopScanner();
+      document.getElementById('scannerCard').style.display = 'none';
+      await lookupProduct(code, 'barcode', 'scanner');
+    },
     () => {}
-  );
+  ).catch(() => {
+    document.getElementById('scannerCard').innerHTML = '<p style="color:#991b1b;">تعذر تشغيل الكاميرا. استخدم الإدخال اليدوي.</p>';
+  });
 }
 
-async function onScanSuccess3(barcode) {
-  if (scanner3) { await scanner3.stop(); scanner3 = null; }
-  document.getElementById('scannerCard3').style.display = 'none';
-  const { data } = await db.from('products').select('*').eq('barcode', barcode).single();
+async function stopScanner() {
+  if (scanner) {
+    await scanner.stop().catch(() => {});
+    scanner = null;
+  }
+}
+
+async function manualLookup() {
+  const value = document.getElementById('manualCode').value.trim();
+  const type = document.getElementById('manualType').value;
+
+  if (!value) {
+    alert('اكتب الباركود أو رقم الصنف');
+    return;
+  }
+
+  currentEntryMethod = type === 'item_number' ? 'manual_sku' : type === 'barcode' ? 'manual_barcode' : 'manual_auto';
+  await stopScanner();
+  document.getElementById('scannerCard').style.display = 'none';
+
+  if (type === 'barcode') {
+    await lookupProduct(value, 'barcode', currentEntryMethod);
+  } else if (type === 'item_number') {
+    await lookupProduct(value, 'item_number', currentEntryMethod);
+  } else {
+    await lookupProduct(value, 'auto', currentEntryMethod);
+  }
+}
+
+async function findProduct(value, searchType) {
+  let result = null;
+
+  if (searchType === 'barcode') {
+    const { data } = await db.from('products').select('*').eq('barcode', value).single();
+    result = data;
+  } else if (searchType === 'item_number') {
+    const { data } = await db.from('products').select('*').eq('item_number', value).single();
+    result = data;
+  } else {
+    const { data: byBarcode } = await db.from('products').select('*').eq('barcode', value).single();
+    if (byBarcode) result = byBarcode;
+    if (!result) {
+      const { data: bySku } = await db.from('products').select('*').eq('item_number', value).single();
+      if (bySku) result = bySku;
+    }
+  }
+
+  return result;
+}
+
+async function lookupProduct(value, searchType, entryMethod) {
+  const resultDiv = document.getElementById('productResult');
+  resultDiv.innerHTML = '<div class="card" style="text-align:center;color:#64748b;">جاري البحث...</div>';
+
+  const data = await findProduct(value, searchType);
+
   if (data) {
-    currentProduct3 = data;
-    const sysQty = systemQuantities[data.item_number] || 0;
-    document.getElementById('productResult3').innerHTML = `
+    currentProduct = data;
+
+    const { data: systemItem } = await db
+      .from('audit_system_items')
+      .select('*')
+      .eq('session_id', currentSession.id)
+      .eq('item_number', data.item_number)
+      .single();
+
+    currentSystemQuantity = systemItem ? systemItem.system_quantity : 0;
+
+    resultDiv.innerHTML = `
       <div class="product-found">
         <div class="product-name">${data.name}</div>
         <div class="product-meta">رقم الصنف: ${data.item_number}</div>
-        <div class="product-meta">الكمية النظامية: <strong>${sysQty}</strong></div>
+        <div class="product-meta">الباركود: ${data.barcode}</div>
+        <div class="product-meta">الكمية النظامية: <strong>${currentSystemQuantity}</strong></div>
+        <div class="product-meta">طريقة الإدخال: ${entryMethod}</div>
       </div>`;
-    document.getElementById('quantity3').value = 0;
+
+    document.getElementById('quantity').value = 0;
+    document.getElementById('entryForm').style.display = 'block';
+
+    const employeeName = localStorage.getItem('employeeName') || '';
+    const { data: previous } = await db
+      .from('audit_entries')
+      .select('*')
+      .eq('session_id', currentSession.id)
+      .eq('employee_name', employeeName)
+      .eq('item_number', data.item_number);
+
+    if (previous && previous.length > 0) {
+      alert('تنبيه: سبق لك تسجيل هذا الصنف في نفس الجلسة. تأكد قبل تسجيله مرة أخرى.');
+    }
+
   } else {
-    currentProduct3 = { barcode, name: 'غير معرّف', item_number: '—' };
-    document.getElementById('productResult3').innerHTML = `
-      <div class="product-found" style="background:#fef2f2;border-color:#fecaca;">
-        <div class="product-name" style="color:#991b1b;">⚠️ باركود غير موجود</div>
-        <div class="product-meta">${barcode}</div>
+    currentProduct = null;
+
+    await db.from('unregistered_barcodes').insert({
+      source_page: 'audit',
+      barcode: searchType === 'barcode' || searchType === 'auto' ? value : null,
+      item_number: searchType === 'item_number' ? value : null,
+      entry_value: value,
+      employee_name: localStorage.getItem('employeeName') || '',
+      session_code: currentSession ? currentSession.session_name : '',
+      status: 'pending'
+    });
+
+    await db.from('audit_trail').insert({
+      action_type: 'unregistered_item',
+      source_page: 'audit',
+      employee_name: localStorage.getItem('employeeName') || '',
+      session_code: currentSession ? currentSession.session_name : '',
+      barcode: searchType === 'barcode' || searchType === 'auto' ? value : null,
+      item_number: searchType === 'item_number' ? value : null,
+      details: { entry_value: value, entry_method: entryMethod }
+    });
+
+    resultDiv.innerHTML = `
+      <div class="product-not-found">
+        ⚠️ المنتج غير موجود في التطبيق.<br>
+        تم إرسال تنبيه للمكتب لإضافة المنتج.<br>
+        <strong>القيمة المدخلة:</strong> ${value}
       </div>`;
-    document.getElementById('quantity3').value = 0;
+
+    document.getElementById('entryForm').style.display = 'none';
+
+    setTimeout(() => {
+      resetScanner();
+    }, 2200);
   }
-  document.getElementById('entryForm3').style.display = 'block';
 }
 
-function changeQty3(delta) {
-  const input = document.getElementById('quantity3');
-  const val = parseInt(input.value) + delta;
+function changeQty(delta) {
+  const input = document.getElementById('quantity');
+  const val = parseInt(input.value || '0') + delta;
   if (val >= 0) input.value = val;
 }
 
-async function submitEntry3() {
+function getOfflineQueue() {
+  return JSON.parse(localStorage.getItem('offline_audit_queue') || '[]');
+}
+
+function setOfflineQueue(items) {
+  localStorage.setItem('offline_audit_queue', JSON.stringify(items));
+}
+
+async function submitAuditEntry() {
   const employeeName = localStorage.getItem('employeeName') || '';
-  const actualQty = parseInt(document.getElementById('quantity3').value);
-  const sysQty = systemQuantities[currentProduct3.item_number] || 0;
-  const btn = document.getElementById('submitBtn3');
+  const actualQty = parseInt(document.getElementById('quantity').value);
+  const btn = document.getElementById('submitBtn');
+
+  if (!currentProduct) {
+    alert('لم يتم اختيار منتج صالح');
+    return;
+  }
+
+  if (isNaN(actualQty) || actualQty < 0) {
+    alert('أدخل كمية صحيحة');
+    return;
+  }
+
   btn.disabled = true;
   btn.innerHTML = 'جاري التسجيل <span class="spinner"></span>';
 
-  const { error } = await db.from('audit_entries').insert({
+  const entry = {
     session_id: currentSession.id,
-    barcode: currentProduct3.barcode,
-    item_number: currentProduct3.item_number,
-    product_name: currentProduct3.name,
+    barcode: currentProduct.barcode,
+    item_number: currentProduct.item_number,
+    product_name: currentProduct.name,
     actual_quantity: actualQty,
-    system_quantity: sysQty,
-    employee_name: employeeName
-  });
+    system_quantity: currentSystemQuantity,
+    employee_name: employeeName,
+    entry_method: currentEntryMethod
+  };
 
-  if (!error) {
+  try {
+    const { error } = await db.from('audit_entries').insert(entry);
+    if (error) throw error;
+
+    await db.from('audit_trail').insert({
+      action_type: 'audit_entry',
+      source_page: 'audit',
+      employee_name: employeeName,
+      session_code: currentSession.session_name,
+      barcode: currentProduct.barcode,
+      item_number: currentProduct.item_number,
+      product_name: currentProduct.name,
+      quantity: actualQty,
+      details: { entry_method: currentEntryMethod, system_quantity: currentSystemQuantity }
+    });
+
+    if (MAKE_WEBHOOK_AUDIT) {
+      fetch(MAKE_WEBHOOK_AUDIT, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ ...entry, session_name: currentSession.session_name })
+      }).catch(()=>{});
+    }
+
     entryCount++;
-    document.getElementById('entryCount3').textContent = 'عدد الإدخالات: ' + entryCount;
-    const msg = document.getElementById('successMsg');
-    msg.style.display = 'block';
-    setTimeout(() => { msg.style.display = 'none'; resetScanner3(); }, 1500);
-  } else {
-    alert('خطأ في التسجيل');
+    document.getElementById('entryCount').textContent = 'عدد إدخالاتك: ' + entryCount;
+    showSuccess();
+
+  } catch (error) {
+    const queue = getOfflineQueue();
+    queue.push({ ...entry, session_name: currentSession.session_name, saved_at: new Date().toISOString() });
+    setOfflineQueue(queue);
+    alert('تعذر الإرسال الآن. تم حفظ العملية مؤقتًا وسيتم مزامنتها لاحقًا.');
+    showSuccess();
   }
+
   btn.disabled = false;
   btn.innerHTML = 'تسجيل الكمية';
 }
 
-function resetScanner3() {
-  currentProduct3 = null;
-  document.getElementById('productResult3').innerHTML = '';
-  document.getElementById('entryForm3').style.display = 'none';
-  document.getElementById('quantity3').value = 0;
-  document.getElementById('scannerCard3').style.display = 'block';
-  startScanner3();
+function showSuccess() {
+  document.getElementById('entryForm').style.display = 'none';
+  document.getElementById('productResult').innerHTML = '';
+  const msg = document.getElementById('successMsg');
+  msg.style.display = 'block';
+  setTimeout(() => {
+    msg.style.display = 'none';
+    resetScanner();
+  }, 1500);
 }
 
-async function refreshCount() {
+async function syncOfflineAudit() {
+  const queue = getOfflineQueue();
+  if (!queue.length) {
+    alert('لا توجد بيانات محفوظة مؤقتًا');
+    return;
+  }
+
+  let success = 0;
+  const remaining = [];
+
+  for (const item of queue) {
+    const { error } = await db.from('audit_entries').insert({
+      session_id: item.session_id,
+      barcode: item.barcode,
+      item_number: item.item_number,
+      product_name: item.product_name,
+      actual_quantity: item.actual_quantity,
+      system_quantity: item.system_quantity,
+      employee_name: item.employee_name,
+      entry_method: item.entry_method
+    });
+
+    if (error) remaining.push(item);
+    else success++;
+  }
+
+  setOfflineQueue(remaining);
+  alert(`تمت مزامنة ${success} عملية. المتبقي: ${remaining.length}`);
+  await refreshMyCount();
+}
+
+function resetScanner() {
+  currentProduct = null;
+  currentSystemQuantity = 0;
+  document.getElementById('productResult').innerHTML = '';
+  document.getElementById('entryForm').style.display = 'none';
+  document.getElementById('quantity').value = 0;
+  document.getElementById('manualCode').value = '';
+  document.getElementById('scannerCard').style.display = 'block';
+  startScanner();
+}
+
+async function refreshMyCount() {
   if (!currentSession) return;
-  const { count } = await db.from('audit_entries').select('*', { count: 'exact', head: true }).eq('session_id', currentSession.id);
+
+  const employeeName = localStorage.getItem('employeeName') || '';
+
+  const { count } = await db
+    .from('audit_entries')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', currentSession.id)
+    .eq('employee_name', employeeName);
+
   entryCount = count || 0;
-  document.getElementById('entryCount').textContent = 'عدد الإدخالات: ' + entryCount;
+  document.getElementById('entryCount').textContent = 'عدد إدخالاتك: ' + entryCount;
 }
 
-function finishAudit() {
-  if (confirm('هل أنت متأكد من إنهاء الجرد؟')) {
-    alert('تم إنهاء الجرد. سيتم إضافة صفحة التقرير في المرحلة القادمة.');
+function finishEmployeeAudit() {
+  if (confirm('هل تريد إنهاء عمليتك؟')) {
+    alert('تم حفظ إدخالاتك. التقارير ستظهر للمكتب فقط.');
+    window.location.href = 'index.html';
   }
 }
 </script>
