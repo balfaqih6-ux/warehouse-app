@@ -7,6 +7,7 @@
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
   <style>
     :root {
       --green: #2f8f46;
@@ -149,14 +150,67 @@ function toggleScanner() {
   }
 }
 
-function downloadProductTemplate() {
-  const rows = [
-    { name: '', item_number: '', barcode: '', unit: 'قطعة', description: '' }
+async function downloadProductTemplate() {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Products Template');
+
+  worksheet.columns = [
+    { header: 'name', key: 'name', width: 30 },
+    { header: 'item_number', key: 'item_number', width: 22 },
+    { header: 'barcode', key: 'barcode', width: 24 },
+    { header: 'unit', key: 'unit', width: 16 },
+    { header: 'description', key: 'description', width: 35 }
   ];
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Products Template');
-  XLSX.writeFile(wb, 'zain_products_template.xlsx');
+
+  worksheet.getRow(1).font = { bold: true };
+  worksheet.getRow(1).alignment = { horizontal: 'center' };
+
+  worksheet.addRow({
+    name: '',
+    item_number: '',
+    barcode: '',
+    unit: 'قطعة',
+    description: ''
+  });
+
+  const unitOptions = ['قطعة', 'كرتون', 'كيلو', 'متر', 'لتر',];
+
+  for (let row = 2; row <= 1000; row++) {
+    worksheet.getCell(`D${row}`).dataValidation = {
+      type: 'list',
+      allowBlank: false,
+      formulae: [`"${unitOptions.join(',')}"`],
+      showErrorMessage: true,
+      errorStyle: 'error',
+      errorTitle: 'وحدة غير صحيحة',
+      error: 'اختر وحدة القياس من القائمة فقط'
+    };
+  }
+
+  worksheet.views = [
+    { state: 'frozen', ySplit: 1 }
+  ];
+
+  worksheet.getColumn('A').alignment = { horizontal: 'right' };
+  worksheet.getColumn('B').alignment = { horizontal: 'center' };
+  worksheet.getColumn('C').alignment = { horizontal: 'center' };
+  worksheet.getColumn('D').alignment = { horizontal: 'center' };
+  worksheet.getColumn('E').alignment = { horizontal: 'right' };
+
+  const buffer = await workbook.xlsx.writeBuffer();
+
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'zain_products_template.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(link.href);
 }
 
 async function saveProduct() {
