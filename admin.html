@@ -173,7 +173,7 @@ async function downloadProductTemplate() {
     description: ''
   });
 
-  const unitOptions = ['قطعة', 'كرتون', 'كيلو', 'متر', 'لتر',];
+  const unitOptions = ['قطعة', 'كرتون', 'كيلو', 'متر', 'لتر'];
 
   for (let row = 2; row <= 1000; row++) {
     worksheet.getCell(`D${row}`).dataValidation = {
