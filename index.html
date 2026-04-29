@@ -4,178 +4,465 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#2f8f46">
-  <title>نظام جرد المستودع</title>
+  <title>نظام الجرد الذكي - وكالة زين</title>
   <link rel="manifest" href="manifest.json">
+
   <style>
     :root {
-      --green: #2f8f46;
-      --green-dark: #1f6b34;
+      --green: #1f8f46;
+      --green-dark: #0f6b32;
+      --green-deep: #0b5a2a;
       --lime: #b7db27;
+      --lime-soft: #eef9c8;
       --dark: #231f20;
+      --dark-soft: #302b2c;
       --bg: #f4f8f1;
       --card: #ffffff;
-      --muted: #64748b;
-      --border: #dbe7d4;
-      --red: #dc2626;
-      --blue: #2563eb;
+      --muted: #6b7280;
+      --muted-light: #94a3b8;
+      --border: #e4eadf;
+      --shadow: 0 18px 45px rgba(35, 31, 32, 0.12);
+      --soft-shadow: 0 10px 25px rgba(35, 31, 32, 0.08);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
 
     body {
       font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-      background:
-        radial-gradient(circle at top, rgba(183,219,39,0.22), transparent 32%),
-        var(--bg);
       min-height: 100vh;
+      background:
+        radial-gradient(circle at top center, rgba(183, 219, 39, 0.24), transparent 34%),
+        linear-gradient(135deg, #f9fbf7 0%, #eff6eb 100%);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 22px;
       color: var(--dark);
     }
 
-    .brand-card {
+    .app-shell {
+      position: relative;
       width: 100%;
       max-width: 430px;
-      background: rgba(255,255,255,0.88);
-      border: 1px solid var(--border);
-      border-radius: 26px;
-      padding: 24px;
-      box-shadow: 0 14px 38px rgba(35,31,32,0.08);
+      min-height: 720px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(228, 234, 223, 0.95);
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      padding: 24px 20px 18px;
+    }
+
+    .app-shell::before {
+      content: "";
+      position: absolute;
+      top: 48px;
+      left: -80px;
+      width: 620px;
+      height: 220px;
+      background:
+        linear-gradient(120deg, transparent 12%, rgba(47, 143, 70, 0.08) 34%, rgba(183, 219, 39, 0.13) 48%, transparent 74%);
+      border-radius: 50%;
+      transform: rotate(-12deg);
+      pointer-events: none;
+    }
+
+    .app-shell::after {
+      content: "";
+      position: absolute;
+      bottom: -100px;
+      right: -140px;
+      width: 420px;
+      height: 260px;
+      background: radial-gradient(circle, rgba(183, 219, 39, 0.22), transparent 67%);
+      pointer-events: none;
+    }
+
+    .content {
+      position: relative;
+      z-index: 2;
     }
 
     .brand-logo {
       width: 100%;
-      max-width: 310px;
+      max-width: 290px;
       display: block;
       margin: 0 auto 18px;
       object-fit: contain;
     }
 
     .logo-fallback {
-      font-size: 54px;
-      margin-bottom: 12px;
-      text-align: center;
+      width: 86px;
+      height: 86px;
       display: none;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      background: linear-gradient(135deg, var(--green), var(--lime));
+      border-radius: 24px;
+      font-size: 42px;
+      box-shadow: var(--soft-shadow);
     }
 
     h1 {
-      font-size: 25px;
-      color: var(--dark);
-      margin-bottom: 6px;
       text-align: center;
-      font-weight: 800;
+      font-size: 28px;
+      line-height: 1.35;
+      color: var(--dark);
+      font-weight: 900;
+      letter-spacing: -0.4px;
+      margin-bottom: 6px;
     }
 
     .subtitle {
+      text-align: center;
       font-size: 14px;
       color: var(--muted);
-      margin-bottom: 28px;
-      text-align: center;
+      margin-bottom: 26px;
+      font-weight: 500;
     }
 
-    .section-title {
-      font-size: 13px;
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      margin: 18px 2px 10px;
       color: var(--green-dark);
-      font-weight: 800;
-      margin: 18px 0 8px;
+      font-size: 15px;
+      font-weight: 900;
     }
 
-    .btn-main {
-      display: block;
+    .section-header .icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #eff8eb;
+      border: 1px solid #d8ead0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--green);
+      font-size: 16px;
+    }
+
+    .action-card {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-height: 116px;
       width: 100%;
-      padding: 20px 18px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 18px;
-      font-size: 18px;
-      font-weight: 800;
-      cursor: pointer;
       text-decoration: none;
-      text-align: center;
-      transition: transform 0.1s, opacity 0.1s, box-shadow 0.1s;
-      font-family: inherit;
-      box-shadow: 0 8px 18px rgba(35,31,32,0.08);
+      border-radius: 22px;
+      padding: 18px 18px 18px 16px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: var(--soft-shadow);
+      transition: transform 0.12s ease, opacity 0.12s ease, box-shadow 0.12s ease;
     }
 
-    .btn-main:active { transform: scale(0.97); opacity: 0.92; }
+    .action-card:active {
+      transform: scale(0.985);
+      opacity: 0.94;
+      box-shadow: 0 8px 20px rgba(35, 31, 32, 0.1);
+    }
 
-    .btn-receiving {
-      background: var(--green);
+    .card-icon {
+      flex: 0 0 76px;
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      z-index: 2;
+    }
+
+    .card-text {
+      flex: 1;
+      z-index: 2;
+      text-align: right;
+    }
+
+    .card-title {
+      display: block;
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1.25;
+      margin-bottom: 7px;
+    }
+
+    .card-sub {
+      display: block;
+      font-size: 13px;
+      line-height: 1.7;
+      font-weight: 600;
+      opacity: 0.86;
+    }
+
+    .arrow {
+      flex: 0 0 42px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      z-index: 2;
+      font-weight: 400;
+    }
+
+    .card-green {
+      background:
+        radial-gradient(circle at 14% 50%, rgba(255, 255, 255, 0.16), transparent 22%),
+        linear-gradient(135deg, #31a653 0%, #0f6b32 100%);
       color: white;
     }
 
-    .btn-audit {
-      background: var(--dark);
+    .card-green::before {
+      content: "";
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      right: -35px;
+      top: -48px;
+      background: rgba(255, 255, 255, 0.09);
+      border-radius: 50%;
+    }
+
+    .card-green .card-icon {
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(8px);
+    }
+
+    .card-green .arrow {
+      background: rgba(255, 255, 255, 0.11);
       color: white;
     }
 
-    .btn-office {
-      background: var(--lime);
+    .card-dark {
+      background:
+        radial-gradient(circle at 12% 45%, rgba(255, 255, 255, 0.08), transparent 24%),
+        linear-gradient(135deg, #393536 0%, #171415 100%);
+      color: white;
+    }
+
+    .card-dark::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(130deg, transparent 0%, rgba(255,255,255,0.05) 52%, transparent 100%);
+    }
+
+    .card-dark .card-icon {
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .card-dark .arrow {
+      background: rgba(255, 255, 255, 0.09);
+      color: white;
+    }
+
+    .card-lime {
+      background:
+        radial-gradient(circle at 10% 42%, rgba(255, 255, 255, 0.65), transparent 25%),
+        linear-gradient(135deg, #eef9c8 0%, #d9f26b 58%, #c3e62d 100%);
+      color: var(--dark);
+      border: 1px solid rgba(183, 219, 39, 0.42);
+    }
+
+    .card-lime .card-icon {
+      background: rgba(255, 255, 255, 0.52);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      color: var(--green-dark);
+    }
+
+    .card-lime .arrow {
+      background: rgba(255, 255, 255, 0.38);
+      color: var(--green-dark);
+    }
+
+    .card-white {
+      background: rgba(255, 255, 255, 0.95);
+      color: var(--dark);
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 24px rgba(35, 31, 32, 0.08);
+    }
+
+    .card-white .card-icon {
+      background: #f4f8f1;
+      border: 1px solid #dcebd4;
+      color: var(--green-dark);
+    }
+
+    .card-white .card-title {
       color: var(--dark);
     }
 
-    .btn-admin {
-      background: white;
-      color: var(--green-dark);
-      border: 2px solid var(--border);
-      font-size: 16px;
-      padding: 16px 18px;
+    .card-white .card-sub {
+      color: var(--muted);
     }
 
-    .btn-sub {
-      font-size: 12px;
-      font-weight: 500;
-      opacity: 0.82;
-      display: block;
-      margin-top: 5px;
+    .card-white .arrow {
+      background: #f2f8ee;
+      color: var(--green-dark);
     }
 
     .footer {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       margin-top: 18px;
-      text-align: center;
-      font-size: 11px;
-      color: var(--muted);
+      padding-top: 14px;
+      font-size: 12px;
+      color: #7c8794;
+      font-weight: 600;
+    }
+
+    .footer-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid #d9e3d4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--green);
+      background: #fff;
+    }
+
+    @media (max-width: 420px) {
+      body {
+        padding: 0;
+        align-items: stretch;
+        justify-content: flex-start;
+        background: #f4f8f1;
+      }
+
+      .app-shell {
+        max-width: none;
+        min-height: 100vh;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        padding: 22px 16px 16px;
+      }
+
+      .brand-logo {
+        max-width: 270px;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+
+      .action-card {
+        min-height: 108px;
+        padding: 16px 16px 16px 14px;
+        border-radius: 20px;
+      }
+
+      .card-icon {
+        width: 68px;
+        height: 68px;
+        flex-basis: 68px;
+        font-size: 30px;
+      }
+
+      .card-title {
+        font-size: 20px;
+      }
+
+      .arrow {
+        width: 38px;
+        height: 38px;
+        flex-basis: 38px;
+      }
     }
   </style>
 </head>
+
 <body>
+  <main class="app-shell">
+    <div class="content">
+      <img
+        src="zain-logo.jpg"
+        class="brand-logo"
+        alt="وكالة زين للتجارة العالمية"
+        onerror="this.style.display='none';document.getElementById('fallbackLogo').style.display='flex';"
+      >
 
-  <div class="brand-card">
-    <img src="zain-logo.jpg" class="brand-logo" alt="Zain Logo" onerror="this.style.display='none';document.getElementById('fallbackLogo').style.display='block';">
-    <div class="logo-fallback" id="fallbackLogo">📦</div>
+      <div class="logo-fallback" id="fallbackLogo">Z</div>
 
-    <h1>نظام الجرد الذكي</h1>
-    <p class="subtitle">اختر العملية التي تريد تنفيذها</p>
+      <h1>نظام الجرد الذكي</h1>
+      <p class="subtitle">اختر العملية التي تريد تنفيذها</p>
 
-    <div class="section-title">موظف المستودع</div>
+      <div class="section-header">
+        <span class="icon">👤</span>
+        <span>موظف المستودع</span>
+      </div>
 
-    <a href="receiving.html" class="btn-main btn-receiving">
-      استلام بضاعة
-      <span class="btn-sub">مسح / إدخال يدوي وتسجيل الطلبية الواردة</span>
-    </a>
+      <a href="receiving.html" class="action-card card-green">
+        <div class="card-icon">📦</div>
+        <div class="card-text">
+          <span class="card-title">استلام بضاعة</span>
+          <span class="card-sub">مسح / إدخال يدوي وتسجيل الطلبية الواردة</span>
+        </div>
+        <div class="arrow">›</div>
+      </a>
 
-    <a href="audit.html" class="btn-main btn-audit">
-      جرد مخزني
-      <span class="btn-sub">عد وتوثيق المخزون بدون عرض التقارير</span>
-    </a>
+      <a href="audit.html" class="action-card card-dark">
+        <div class="card-icon">📋</div>
+        <div class="card-text">
+          <span class="card-title">جرد مخزني</span>
+          <span class="card-sub">عد وتوثيق المخزون بدون عرض التقارير</span>
+        </div>
+        <div class="arrow">›</div>
+      </a>
 
-    <div class="section-title">المكتب</div>
+      <div class="section-header">
+        <span class="icon">🏢</span>
+        <span>المكتب</span>
+      </div>
 
-    <a href="office.html" class="btn-main btn-office">
-      لوحة المكتب والتقارير
-      <span class="btn-sub">تقارير، قوالب Excel، وتنبيهات المنتجات غير المسجلة</span>
-    </a>
+      <a href="office.html" class="action-card card-lime">
+        <div class="card-icon">📊</div>
+        <div class="card-text">
+          <span class="card-title">لوحة المكتب والتقارير</span>
+          <span class="card-sub">تقارير، قوالب Excel وتنبيهات المنتجات غير المسجلة</span>
+        </div>
+        <div class="arrow">›</div>
+      </a>
 
-    <a href="admin.html" class="btn-main btn-admin">
-      إدارة المنتجات
-      <span class="btn-sub">إضافة وتحديث المنتجات والباركود</span>
-    </a>
+      <a href="admin.html" class="action-card card-white">
+        <div class="card-icon">▧</div>
+        <div class="card-text">
+          <span class="card-title">إدارة المنتجات</span>
+          <span class="card-sub">إضافة وتحديث المنتجات والباركود</span>
+        </div>
+        <div class="arrow">›</div>
+      </a>
 
-    <div class="footer">Zain International Trading Agency</div>
-  </div>
+      <div class="footer">
+        <span class="footer-icon">✓</span>
+        <span>Zain International Trading Agency</span>
+      </div>
+    </div>
+  </main>
 
   <script>
     if ('serviceWorker' in navigator) {
