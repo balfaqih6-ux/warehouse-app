@@ -8,34 +8,47 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
+    :root {
+      --green: #2f8f46;
+      --green-dark: #1f6b34;
+      --lime: #b7db27;
+      --dark: #231f20;
+      --bg: #f4f8f1;
+      --card: #ffffff;
+      --muted: #64748b;
+      --border: #dbe7d4;
+      --blue: #2563eb;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; padding: 16px; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); padding: 16px; color: var(--dark); }
     .header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-    .back-btn { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 14px; font-size: 14px; cursor: pointer; text-decoration: none; color: #374151; }
-    h2 { font-size: 20px; color: #1e3a5f; }
+    .back-btn { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; font-size: 14px; cursor: pointer; text-decoration: none; color: var(--dark); }
+    h2 { font-size: 20px; color: var(--green-dark); }
     .tab-row { display: flex; gap: 8px; margin-bottom: 20px; }
-    .tab { flex: 1; padding: 10px; text-align: center; border-radius: 10px; border: 1.5px solid #e5e7eb; background: white; font-size: 14px; cursor: pointer; color: #64748b; font-family: inherit; }
-    .tab.active { background: #059669; color: white; border-color: #059669; font-weight: 600; }
-    .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #e5e7eb; }
-    label { display: block; font-size: 13px; color: #64748b; margin-bottom: 6px; font-weight: 500; }
-    input, select { width: 100%; padding: 12px 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 16px; outline: none; transition: border-color 0.2s; font-family: inherit; margin-bottom: 14px; }
-    input:focus { border-color: #059669; }
+    .tab { flex: 1; padding: 10px; text-align: center; border-radius: 10px; border: 1.5px solid var(--border); background: white; font-size: 14px; cursor: pointer; color: var(--muted); font-family: inherit; }
+    .tab.active { background: var(--green); color: white; border-color: var(--green); font-weight: 800; }
+    .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: 0 6px 16px rgba(35,31,32,0.04); }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+    input, select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 16px; outline: none; transition: border-color 0.2s; font-family: inherit; margin-bottom: 14px; }
+    input:focus, select:focus { border-color: var(--green); }
     .btn-scan { width: 100%; padding: 12px; background: #f8fafc; border: 1.5px dashed #94a3b8; border-radius: 10px; font-size: 15px; cursor: pointer; margin-bottom: 14px; color: #475569; font-family: inherit; }
     .scanner-box { width: 100%; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 1; margin-bottom: 12px; display: none; }
-    .btn-save { width: 100%; padding: 16px; background: #059669; color: white; border: none; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-save { width: 100%; padding: 16px; background: var(--green); color: white; border: none; border-radius: 12px; font-size: 17px; font-weight: 800; cursor: pointer; font-family: inherit; }
     .btn-save:disabled { opacity: 0.5; }
-    .success-msg { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 16px; text-align: center; color: #166534; font-weight: 600; margin-bottom: 16px; display: none; }
+    .btn-secondary { width: 100%; padding: 14px; background: var(--dark); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; margin-bottom: 10px; }
+    .success-msg { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 16px; text-align: center; color: #166534; font-weight: 800; margin-bottom: 16px; display: none; }
     .product-item { padding: 14px; border-bottom: 1px solid #f1f5f9; }
     .product-item:last-child { border-bottom: none; }
-    .p-name { font-weight: 600; font-size: 15px; color: #1e3a5f; }
-    .p-meta { font-size: 12px; color: #64748b; margin-top: 3px; }
+    .p-name { font-weight: 800; font-size: 15px; color: var(--green-dark); }
+    .p-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
   </style>
 </head>
 <body>
 
 <div class="header">
   <a href="index.html" class="back-btn">← رجوع</a>
-  <h2>⚙️ إدارة المنتجات</h2>
+  <h2>إدارة المنتجات</h2>
 </div>
 
 <div class="tab-row">
@@ -46,6 +59,8 @@
 <div id="tabAdd">
   <div class="success-msg" id="successMsg">✓ تم حفظ المنتج بنجاح</div>
   <div class="card">
+    <button class="btn-secondary" onclick="downloadProductTemplate()">تحميل قالب Excel للمنتجات</button>
+
     <label>الباركود</label>
     <button class="btn-scan" onclick="toggleScanner()">📷 مسح الباركود بالكاميرا</button>
     <div class="scanner-box" id="scannerBox">
@@ -66,7 +81,6 @@
       <option value="كيلو">كيلو</option>
       <option value="متر">متر</option>
       <option value="لتر">لتر</option>
-      <option value="علبة">علبة</option>
     </select>
 
     <label>وصف (اختياري)</label>
@@ -74,7 +88,7 @@
 
     <button class="btn-save" id="saveBtn" onclick="saveProduct()">حفظ المنتج</button>
 
-    <div style="height:1px;background:#e5e7eb;margin:18px 0;"></div>
+    <div style="height:1px;background:#dbe7d4;margin:18px 0;"></div>
 
     <label>رفع المنتجات من Excel</label>
     <input type="file" id="excelFile" accept=".xlsx,.xls">
@@ -83,7 +97,7 @@
 
     <p style="font-size:12px;color:#64748b;margin-top:10px;line-height:1.7;">
       الأعمدة المطلوبة في ملف Excel:
-      name, item_number أو sku, barcode, unit, description
+      name, item_number, barcode, unit, description
     </p>
   </div>
 </div>
@@ -123,14 +137,26 @@ function toggleScanner() {
       (code) => {
         document.getElementById('barcode').value = code;
         scanner2.stop();
+        scanner2 = null;
         box.style.display = 'none';
       },
       () => {}
     );
   } else {
     if (scanner2) scanner2.stop();
+    scanner2 = null;
     box.style.display = 'none';
   }
+}
+
+function downloadProductTemplate() {
+  const rows = [
+    { name: '', item_number: '', barcode: '', unit: 'قطعة', description: '' }
+  ];
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Products Template');
+  XLSX.writeFile(wb, 'zain_products_template.xlsx');
 }
 
 async function saveProduct() {
@@ -140,8 +166,8 @@ async function saveProduct() {
   const unit = document.getElementById('unit').value;
   const description = document.getElementById('description').value.trim();
 
-  if (!barcode || !itemNumber || !name) {
-    alert('الباركود ورقم الصنف والاسم مطلوبة');
+  if (!barcode || !itemNumber || !name || !unit) {
+    alert('الباركود ورقم الصنف والاسم والوحدة مطلوبة');
     return;
   }
 
@@ -155,12 +181,22 @@ async function saveProduct() {
   );
 
   if (!error) {
+    await db.from('audit_trail').insert({
+      action_type: 'product_saved',
+      source_page: 'admin',
+      barcode,
+      item_number: itemNumber,
+      product_name: name,
+      details: { unit, description }
+    });
+
     document.getElementById('successMsg').style.display = 'block';
     setTimeout(() => document.getElementById('successMsg').style.display = 'none', 3000);
     ['barcode','itemNumber','productName','description'].forEach(id => document.getElementById(id).value = '');
   } else {
     alert('خطأ: تأكد أن الباركود ورقم الصنف غير مكررين');
   }
+
   btn.disabled = false;
   btn.textContent = 'حفظ المنتج';
 }
@@ -196,10 +232,10 @@ async function uploadExcel() {
         updated_at: new Date().toISOString()
       }));
 
-      const invalidRows = products.filter(p => !p.barcode || !p.item_number || !p.name);
+      const invalidRows = products.filter(p => !p.barcode || !p.item_number || !p.name || !p.unit);
 
       if (invalidRows.length > 0) {
-        alert("فيه صفوف ناقصة. لازم كل منتج يحتوي على barcode و item_number/sku و name");
+        alert("فيه صفوف ناقصة. لازم كل منتج يحتوي على name و item_number و barcode و unit");
         return;
       }
 
@@ -215,6 +251,13 @@ async function uploadExcel() {
         console.error(error);
         alert("صار خطأ أثناء رفع Excel: " + error.message);
       } else {
+        await db.from('audit_trail').insert({
+          action_type: 'products_excel_uploaded',
+          source_page: 'admin',
+          quantity: products.length,
+          details: { count: products.length }
+        });
+
         alert("تم رفع المنتجات من Excel بنجاح ✅");
         document.getElementById("excelFile").value = "";
         loadProducts();
@@ -256,9 +299,9 @@ function renderProducts(list) {
 function filterProducts(query) {
   const q = query.toLowerCase();
   renderProducts(allProducts.filter(p =>
-    p.name.toLowerCase().includes(q) ||
-    p.item_number.toLowerCase().includes(q) ||
-    p.barcode.includes(q)
+    (p.name || '').toLowerCase().includes(q) ||
+    (p.item_number || '').toLowerCase().includes(q) ||
+    (p.barcode || '').includes(q)
   ));
 }
 </script>
